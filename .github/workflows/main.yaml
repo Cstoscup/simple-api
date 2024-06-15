@@ -36,13 +36,13 @@ jobs:
 
         - name: Execute Docker Commands on AWS Instance to deploy the application
           env:
-            INSTANCE_ID_1: ${{ secrets.INSTANCE_ID_1 }}
+            INSTANCE_ID_1: "i-0943e02a9aa74b63e"
             INSTANCE_ID_2: ${{ secrets.INSTANCE_ID_2 }}
             CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
             ECR_IMAGE_TO_DEPLOY: ${{ steps.login-pf-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
           run: |
             command_id=$(aws ssm send-command \
-              --instance-ids ${{ env.INSTANCE_ID_1 }} ${{ env.INSTANCE_ID_2 }} \
+              --instance-ids "i-0943e02a9aa74b63e" "i-0de20e06bb1d6c6a8" \
               --document-name "AWS-RunShellScript" \
               --comment "Executing Docker operations" \
               --parameters commands='[
