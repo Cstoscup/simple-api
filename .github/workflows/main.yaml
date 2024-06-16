@@ -47,8 +47,6 @@ jobs:
               --comment "Executing Docker operations" \
               --parameters commands='[
                 "set -e",
-                "trap '\''echo DOCKER_STOP_FAILURE 1>&2'\'' ERR; if docker ps --format '\''{{.Names}}'\'' | grep -q ${{ env.CONTAINER_NAME }}; then docker stop ${{ env.CONTAINER_NAME }}; fi",
-                "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; if docker ps -a --format '\''{{.Names}}'\'' | grep -q ${{ env.CONTAINER_NAME }}; then docker rename ${{ env.CONTAINER_NAME }} ${{ env.CONTAINER_NAME }}-${GITHUB_RUN_NUMBER}; fi",
                 "trap '\''echo DOCKER_LOGIN_FAILURE 1>&2'\'' ERR; aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                 "trap '\''echo DOCKER_PULL_FAILURE 1>&2'\'' ERR; docker pull ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                 "trap '\''echo DOCKER_RUN_FAILURE 1>&2'\'' ERR; docker run -d -p 3000:3000 --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
