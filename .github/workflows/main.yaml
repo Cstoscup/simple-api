@@ -52,6 +52,8 @@ jobs:
         - name: Execute Docker Commands on AWS Instance to deploy the application
           env:
             ECR_IMAGE_TO_DEPLOY: ${{ steps.login-pf-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
+            INSTANCE_ID_1: ${{ secrets.INSTANCE_ID_1 }}
+            INSTANCE_ID_2: ${{ secrets.INSTANCE_ID_2 }}
           run: |
             command_id=$(aws ssm send-command \
               --targets Key=InstanceIds,Values=${{ env.INSTANCE_ID_1 }},${{ env.INSTANCE_ID_2 }} \
