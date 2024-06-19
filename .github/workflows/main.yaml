@@ -59,10 +59,10 @@ jobs:
           run: |
             aws ssm wait command-executed \
               --command-id ${{ env.command_id }} \
-              --instance-id ${{ env.INSTANCE_ID }} || true
+              --instance-id "i-09cb4864dce50998d" || true
             ssm_command_output=$(aws ssm get-command-invocation \
                   --command-id ${{ env.command_id }} \
-                  --instance-id ${{ env.INSTANCE_ID }})
+                  --instance-id "i-09cb4864dce50998d")
 
             standard_error_content=$(echo "$ssm_command_output" | jq -r '.StandardErrorContent')
             standard_error_content=${standard_error_content//$'\n'/' '}
@@ -78,7 +78,7 @@ jobs:
               echo "Commands completed successfully."
               echo "Deleting renamed old container"
               removeOldContainerCommandId=$(aws ssm send-command \
-                --instance-ids ${{ env.INSTANCE_ID }} \
+                --targets Key=InstanceIds,Values=i-09cb4864dce50998d,i-0142c205e97079ff1 \
                 --document-name "AWS-RunShellScript" \
                 --comment "Deploy test-application" \
                 --parameters commands='[
@@ -88,7 +88,7 @@ jobs:
               echo "Waiting for removal of renamed old container to complete..."
               removeContainerInvocation = aws ssm wait command-executed \
                 --command-id "$removeOldContainerCommandId" \
-                --instance-id ${{ env.INSTANCE_ID }} || true
+                --instance-id "i-09cb4864dce50998d" || true
 
               removeContainerInvocationStatus=$(echo $removeContainerInvocation | jq -r '.Status')
 
@@ -109,24 +109,24 @@ jobs:
               echo "Handling Docker run failure..."
                 echo "Rollback initiated..."
                 rollbackId=$(aws ssm send-command \
-                  --instance-ids ${{ env.INSTANCE_ID }} \
+                  --targets Key=InstanceIds,Values=i-09cb4864dce50998d,i-0142c205e97079ff1 \
                   --document-name "AWS-RunShellScript" \
                   --comment "Rollback to previous container version" \
                   --parameters commands='[
                     "set -e",
-                    "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; docker rename ${{ env.CONTIANER_NAME }}-${GITHUB_RUN_NUMBER} ${{ env.CONTIANER_NAME }}",
-                    "trap '\''echo DOCKER_RESTART_FAILURE 1>&2'\'' ERR; docker restart ${{ env.CONTIANER_NAME }}",
+                    "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; docker rename ${{ env.CONTAINER_NAME }}-${GITHUB_RUN_NUMBER} ${{ env.CONTAINER_NAME }}",
+                    "trap '\''echo DOCKER_RESTART_FAILURE 1>&2'\'' ERR; docker restart ${{ env.CONTAINER_NAME }}",
                   ]' --query 'Command.CommandId' --output text)
 
                 echo "Waiting for rollback to get completed..."
                 aws ssm wait command-executed \
                   --command-id "$rollbackId" \
-                  --instance-id ${{ env.INSTANCE_ID }} || true
+                  --instance-id "i-09cb4864dce50998d" || true
 
                 echo "Fetching rollback invocation details..."
                 rollbackInvocation=$(aws ssm get-command-invocation \
                   --command-id "$rollbackId" \
-                  --instance-id ${{ env.INSTANCE_ID }})
+                  --instance-id "i-09cb4864dce50998d")
 
                 rollbackstatus=$(echo $rollbackInvocation | jq -r '.Status')
 
