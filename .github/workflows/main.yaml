@@ -46,11 +46,11 @@ jobs:
               --comment "Executing Docker operations" \
               --parameters commands='[
                 "set -e",
-                "trap '\''echo DOCKER_STOP_FAILURE 1>&2'\'' ERR; if docker ps --format '\''{{.Names}}'\'' | grep -q ${{ env.CONTAINER_NAME }}; then docker stop ${{ env.CONTAINER_NAME }}; fi",
-                "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; if docker ps -a --format '\''{{.Names}}'\'' | grep -q ${{ env.CONTAINER_NAME }}; then docker rename ${{ env.CONTAINER_NAME }} ${{ env.CONTAINER_NAME }}-${GITHUB_SHA}; fi",
+                "trap '\''echo DOCKER_STOP_FAILURE 1>&2'\'' ERR; if docker ps --format '\''{{.Names}}'\'' | grep -q ${{ secrets.CONTAINER_NAME }}; then docker stop ${{ secrets.CONTAINER_NAME }}; fi",
+                "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; if docker ps -a --format '\''{{.Names}}'\'' | grep -q ${{ secrets.CONTAINER_NAME }}; then docker rename ${{ secrets.CONTAINER_NAME }} ${{ secrets.CONTAINER_NAME }}-${GITHUB_SHA}; fi",
                 "trap '\''echo DOCKER_LOGIN_FAILURE 1>&2'\'' ERR; aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                 "trap '\''echo DOCKER_PULL_FAILURE 1>&2'\'' ERR; docker pull ${{ env.ECR_IMAGE_TO_DEPLOY }}",
-                "trap '\''echo DOCKER_RUN_FAILURE 1>&2'\'' ERR; docker run -d -p 3000:3000 --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
+                "trap '\''echo DOCKER_RUN_FAILURE 1>&2'\'' ERR; docker run -d -p 3000:3000 --name ${{ secrets.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
               ]' --query 'Command.CommandId' --output text)
 
             echo "command_id=$command_id" >> $GITHUB_ENV
@@ -75,6 +75,7 @@ jobs:
           id: handle_docker_results
           run: |
             if [[ "${{ env.status }}" == "Success" ]]; then
+              echo ${{ GITHUB_SHA }}
               echo "Commands completed successfully."
               echo "Deleting renamed old container"
               removeOldContainerCommandId=$(aws ssm send-command \
@@ -83,7 +84,7 @@ jobs:
                 --comment "Deploy test-application" \
                 --parameters commands='[
                   "set -e",
-                  "trap '\''echo DOCKER_RM_FAILURE 1>&2'\'' ERR; docker rm ${{ env.CONTAINER_NAME }}-${GITHUB_SHA}"
+                  "trap '\''echo DOCKER_RM_FAILURE 1>&2'\'' ERR; docker rm ${{ secrets.CONTAINER_NAME }}-${GITHUB_SHA}"
                 ]' --query 'Command.CommandId' --output text)
               echo "Waiting for removal of renamed old container to complete..."
               aws ssm wait command-executed \
@@ -117,8 +118,8 @@ jobs:
                   --comment "Rollback to previous container version" \
                   --parameters commands='[
                     "set -e",
-                    "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; docker rename ${{ env.CONTAINER_NAME }}-${GITHUB_SHA} ${{ env.CONTAINER_NAME }}",
-                    "trap '\''echo DOCKER_RESTART_FAILURE 1>&2'\'' ERR; docker restart ${{ env.CONTAINER_NAME }}",
+                    "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; docker rename ${{ secrets.CONTAINER_NAME }}-${GITHUB_SHA} ${{ secrets.CONTAINER_NAME }}",
+                    "trap '\''echo DOCKER_RESTART_FAILURE 1>&2'\'' ERR; docker restart ${{ secrets.CONTAINER_NAME }}",
                   ]' --query 'Command.CommandId' --output text)
 
                 echo "Waiting for rollback to get completed..."
