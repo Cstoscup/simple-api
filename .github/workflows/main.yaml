@@ -33,6 +33,10 @@ jobs:
             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
+        - name: Store the ECR Image URL in output
+          id: ecr_image_url
+          run: echo "::set-output name=ECR_IMAGE_URL::${{ steps.login-pf-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest"
+
   deploy:
     name: Deploy Docker Image to AWS Instance
     runs-on: ubuntu-latest
@@ -44,7 +48,7 @@ jobs:
     steps:
         - name: Execute Docker Commands on AWS Instance to deploy the application
           env:
-            ECR_IMAGE_TO_DEPLOY: ${{ steps.login-pf-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
+            ECR_IMAGE_TO_DEPLOY: ${{ needs.build.outputs.ECR_IMAGE_URL }}
           run: |
             command_id=$(aws ssm send-command \
               --targets Key=InstanceIds,Values=${{ env.INSTANCE_ID_1 }},${{ env.INSTANCE_ID_2 }} \
