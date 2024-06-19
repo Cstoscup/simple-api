@@ -64,7 +64,7 @@ jobs:
               --parameters commands='[
                 "set -e",
                 "trap '\''echo DOCKER_STOP_FAILURE 1>&2'\'' ERR; docker stop ${{ env.CONTAINER_NAME }}",
-                "trap '\''echo DOCKER_LOGIN_FAILURE 1>&2'\'' ERR; aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
+                "trap '\''echo DOCKER_LOGIN_FAILURE 1>&2'\'' ERR; aws ecr get-login-password --region potato | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                 "trap '\''echo DOCKER_PULL_FAILURE 1>&2'\'' ERR; docker pull ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                 "trap '\''echo DOCKER_RUN_FAILURE 1>&2'\'' ERR; docker run --rm -d -p 3000:3000 --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
               ]' --query 'Command.CommandId' --output text)
