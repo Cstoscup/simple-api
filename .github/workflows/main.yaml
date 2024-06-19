@@ -75,7 +75,7 @@ jobs:
           id: handle_docker_results
           run: |
             if [[ "${{ env.status }}" == "Success" ]]; then
-              echo ${{ GITHUB_SHA }}
+              echo ${{github.run_id}}
               echo "Commands completed successfully."
               echo "Deleting renamed old container"
               removeOldContainerCommandId=$(aws ssm send-command \
@@ -84,7 +84,7 @@ jobs:
                 --comment "Deploy test-application" \
                 --parameters commands='[
                   "set -e",
-                  "trap '\''echo DOCKER_RM_FAILURE 1>&2'\'' ERR; docker rm ${{ secrets.CONTAINER_NAME }}-${GITHUB_SHA}"
+                  "trap '\''echo DOCKER_RM_FAILURE 1>&2'\'' ERR; docker rm ${{ secrets.CONTAINER_NAME }}-${{github.run_id}}"
                 ]' --query 'Command.CommandId' --output text)
               echo "Waiting for removal of renamed old container to complete..."
               aws ssm wait command-executed \
@@ -118,7 +118,7 @@ jobs:
                   --comment "Rollback to previous container version" \
                   --parameters commands='[
                     "set -e",
-                    "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; docker rename ${{ secrets.CONTAINER_NAME }}-${GITHUB_SHA} ${{ secrets.CONTAINER_NAME }}",
+                    "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; docker rename ${{ secrets.CONTAINER_NAME }}-${{github.run_id}} ${{ secrets.CONTAINER_NAME }}",
                     "trap '\''echo DOCKER_RESTART_FAILURE 1>&2'\'' ERR; docker restart ${{ secrets.CONTAINER_NAME }}",
                   ]' --query 'Command.CommandId' --output text)
 
