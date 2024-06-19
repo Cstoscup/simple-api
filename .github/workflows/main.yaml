@@ -52,7 +52,17 @@ jobs:
         - name: Pull and Run Docker Image from Amazon ECR
           env:
             ECR_IMAGE_TO_DEPLOY: ${{ steps.login-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
-          run: echo "$ECR_IMAGE_TO_DEPLOY"
+          run: |
+            aws ssm send-command \
+              --targets Key=InstanceIds,Values=${{ env.INSTANCE_ID_1 }},${{ env.INSTANCE_ID_2 }} \
+              --document-name "AWS-RunShellScript" \
+              --comment "Executing Docker operations" \
+              --parameters commands='[
+                  "docker stop ${{ secrets.CONTAINER_NAME }}",
+                  "docker rm ${{ secrets.CONTAINER_NAME }}",
+                  "docker pull $ECR_IMAGE_TO_DEPLOY",
+                  "docker run -d -p 3000:3000 --name ${{ secrets.CONTAINER_NAME }} $ECR_IMAGE_TO_DEPLOY"
+              ]'
 
         # - name: Execute Docker Commands on AWS Instance to deploy the application
         #   env:
