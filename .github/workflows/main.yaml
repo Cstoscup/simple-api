@@ -66,7 +66,7 @@ jobs:
                 "set -e",
                 "docker stop ${{ env.CONTAINER_NAME }} || true",
                 "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
-                "docker pull potato",
+                "docker pull ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                 "docker run --rm -d -p 3000:3000 --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
               ]' --query 'Command.CommandId' --output text)
 
@@ -76,11 +76,11 @@ jobs:
             aws ssm wait command-executed \
               --command-id ${{ env.command_id }} \
               --instance-id ${{ env.INSTANCE_ID_1 }} || true
-        - name: Get Docker Command Output
+        - name: Get Deployment Command Status
           run: |
             ssm_command_output=$(aws ssm list-commands --command-id ${{ env.command_id }} --query 'Commands[0].Status' --output text)
             echo "status=$ssm_command_output" >> $GITHUB_ENV
-        - name: Check Docker Command Status
+        - name: Check Deployment Status
           run: |
             if [[ "${{ env.status }}" == "Success" ]]; then
               echo "Your API was deployed successfully"
