@@ -62,7 +62,7 @@ jobs:
               --parameters commands='[
                   "docker stop ${{ secrets.CONTAINER_NAME }}",
                   "docker rm ${{ secrets.CONTAINER_NAME }}",
-                  "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}"
+                  "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                   "docker pull $ECR_IMAGE_TO_DEPLOY",
                   "docker run -d -p 3000:3000 --name ${{ secrets.CONTAINER_NAME }} $ECR_IMAGE_TO_DEPLOY"
               ]'
