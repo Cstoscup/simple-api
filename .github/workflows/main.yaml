@@ -78,6 +78,6 @@ jobs:
               --instance-id ${{ env.INSTANCE_ID_1 }} || true
         - name: Get Docker Command Output
           run: |
-            ssm_command_output=$(aws ssm list-commands --command-id ${{ env.command_id }})
+            ssm_command_output=$(aws ssm list-commands --command-id ${{ env.command_id }} --query 'Commands[0].Status' --output text)
 
             echo "$ssm_command_output"
