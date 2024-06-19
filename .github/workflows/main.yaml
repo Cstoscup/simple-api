@@ -7,10 +7,6 @@ jobs:
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    env:
-      INSTANCE_ID_1: ${{ secrets.INSTANCE_ID_1 }}
-      INSTANCE_ID_2: ${{ secrets.INSTANCE_ID_2 }}
-      CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
     steps:
         - name: Checkout
           uses: actions/checkout@v2
@@ -37,7 +33,14 @@ jobs:
             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-
+  deploy:
+    name: Deploy Docker Image to AWS Instance
+    runs-on: ubuntu-latest
+    env:
+      INSTANCE_ID_1: ${{ secrets.INSTANCE_ID_1 }}
+      INSTANCE_ID_2: ${{ secrets.INSTANCE_ID_2 }}
+      CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+    steps:
         - name: Execute Docker Commands on AWS Instance to deploy the application
           env:
             ECR_IMAGE_TO_DEPLOY: ${{ steps.login-pf-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
