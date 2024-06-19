@@ -36,7 +36,7 @@ jobs:
 
         - name: Execute Docker Commands on AWS Instance to deploy the application
           env:
-            INSTANCE_ID_1: "i-09cb4864dce50998d"
+            INSTANCE_ID: "i-09cb4864dce50998d"
             CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
             ECR_IMAGE_TO_DEPLOY: ${{ steps.login-pf-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
           run: |
