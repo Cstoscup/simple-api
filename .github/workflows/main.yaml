@@ -33,9 +33,8 @@ jobs:
           run: |
             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-            URL=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-            echo "::add-mask::$URL"
-            echo "test=$URL" >> $GITHUB_OUTPUT
+            URL="echo -n $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG | base64 -w 0"
+            echo -n "test=$URL" >> $GITHUB_OUTPUT
 
   deploy:
       runs-on: ubuntu-latest
