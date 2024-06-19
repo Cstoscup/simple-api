@@ -36,13 +36,12 @@ jobs:
 
         - name: Execute Docker Commands on AWS Instance to deploy the application
           env:
-            INSTANCE_ID_1: "i-0d26fc2b02c616897"
-            INSTANCE_ID_2: "i-0ca68176cd1d05357"
+            INSTANCE_ID_1: "i-09cb4864dce50998d"
             CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
             ECR_IMAGE_TO_DEPLOY: ${{ steps.login-pf-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
           run: |
             command_id=$(aws ssm send-command \
-              --targets Key=InstanceIds,Values=i-0d26fc2b02c616897,i-0ca68176cd1d05357 \
+              --targets Key=InstanceIds,Values=i-09cb4864dce50998d,i-0142c205e97079ff1 \
               --document-name "AWS-RunShellScript" \
               --comment "Executing Docker operations" \
               --parameters commands='[
@@ -55,3 +54,92 @@ jobs:
               ]' --query 'Command.CommandId' --output text)
 
             echo "command_id=$command_id" >> $GITHUB_ENV
+
+        - name: Retrieve and Store SSM Command Results
+          run: |
+            aws ssm wait command-executed \
+              --command-id ${{ env.command_id }} \
+              --instance-id ${{ env.INSTANCE_ID }} || true
+            ssm_command_output=$(aws ssm get-command-invocation \
+                  --command-id ${{ env.command_id }} \
+                  --instance-id ${{ env.INSTANCE_ID }})
+
+            standard_error_content=$(echo "$ssm_command_output" | jq -r '.StandardErrorContent')
+            standard_error_content=${standard_error_content//$'\n'/' '}
+            status=$(echo "$ssm_command_output" | jq -r '.Status')
+
+            echo "status=$status" >> $GITHUB_ENV
+            echo "standard_error_content=$standard_error_content" >> $GITHUB_ENV
+
+        - name: Check Docker Command Success and Remove Old Container
+          id: handle_docker_results
+          run: |
+            if [[ "${{ env.status }}" == "Success" ]]; then
+              echo "Commands completed successfully."
+              echo "Deleting renamed old container"
+              removeOldContainerCommandId=$(aws ssm send-command \
+                --instance-ids ${{ env.INSTANCE_ID }} \
+                --document-name "AWS-RunShellScript" \
+                --comment "Deploy test-application" \
+                --parameters commands='[
+                  "set -e",
+                  "trap '\''echo DOCKER_RM_FAILURE 1>&2'\'' ERR; docker rm ${{ env.CONTAINER_NAME }}-${GITHUB_RUN_NUMBER}"
+                ]' --query 'Command.CommandId' --output text)
+              echo "Waiting for removal of renamed old container to complete..."
+              removeContainerInvocation = aws ssm wait command-executed \
+                --command-id "$removeOldContainerCommandId" \
+                --instance-id ${{ env.INSTANCE_ID }} || true
+
+              removeContainerInvocationStatus=$(echo $removeContainerInvocation | jq -r '.Status')
+
+              if [[ $removeContainerInvocationStatus == "Success" ]]; then
+                echo "Removal of renamed old container completed successfully."
+              else
+                error_content=$(echo $removeContainerInvocation | jq -r '.StandardErrorContent')
+                echo "Container removal failed with error: ${error_content}"
+              fi
+            fi
+
+        - name: Check Docker Command Failures and rollback if needed
+          if: env.status == 'Failed'
+          run: |
+            echo "error_content: ${{ env.standard_error_content }}"
+            if echo "${{ env.standard_error_content }}" | grep -Eq "DOCKER_RUN_FAILURE|DOCKER_PULL_FAILURE"; then
+              echo "Docker run command failed"
+              echo "Handling Docker run failure..."
+                echo "Rollback initiated..."
+                rollbackId=$(aws ssm send-command \
+                  --instance-ids ${{ env.INSTANCE_ID }} \
+                  --document-name "AWS-RunShellScript" \
+                  --comment "Rollback to previous container version" \
+                  --parameters commands='[
+                    "set -e",
+                    "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; docker rename ${{ env.CONTIANER_NAME }}-${GITHUB_RUN_NUMBER} ${{ env.CONTIANER_NAME }}",
+                    "trap '\''echo DOCKER_RESTART_FAILURE 1>&2'\'' ERR; docker restart ${{ env.CONTIANER_NAME }}",
+                  ]' --query 'Command.CommandId' --output text)
+
+                echo "Waiting for rollback to get completed..."
+                aws ssm wait command-executed \
+                  --command-id "$rollbackId" \
+                  --instance-id ${{ env.INSTANCE_ID }} || true
+
+                echo "Fetching rollback invocation details..."
+                rollbackInvocation=$(aws ssm get-command-invocation \
+                  --command-id "$rollbackId" \
+                  --instance-id ${{ env.INSTANCE_ID }})
+
+                rollbackstatus=$(echo $rollbackInvocation | jq -r '.Status')
+
+                if [[ $rollbackstatus == "Success" ]]; then
+                  echo "Rollback completed: $rollbackstatus"
+                else
+                  error_content=$(echo $rollbackInvocation | jq -r '.StandardErrorContent')
+                  echo "Rollback failed with error: ${error_content}"
+                fi
+                exit 1
+
+            else
+              echo "Command did not complete successfully."
+              echo "Error details: ${{ env.standard_error_content }}"
+              exit 1
+            fi
