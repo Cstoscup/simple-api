@@ -79,6 +79,6 @@ jobs:
         - name: Get Docker Command Output
           run: |
             ssm_command_output=$(aws ssm list-commands \
-                  --command-id ${{ env.command_id }} \
+                  --command-id ${{ env.command_id }} \)
 
             echo "$ssm_command_output"
