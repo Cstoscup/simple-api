@@ -115,7 +115,6 @@ jobs:
             echo "status=$status" >> $GITHUB_ENV
             echo "standard_error_content=$standard_error_content" >> $GITHUB_ENV
         - name: Check Docker Command Success
-          id: handle_docker_results
           run: |
             if [[ "${{ env.status }}" == "Success" ]]; then
               echo "Commands completed successfully on instance 2."
