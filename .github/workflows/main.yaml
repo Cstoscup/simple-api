@@ -65,9 +65,9 @@ jobs:
               --parameters commands='[
                 "set -e",
                 "docker stop ${{ env.CONTAINER_NAME }} || true",
-                "trap '\''echo DOCKER_LOGIN_FAILURE 1>&2'\'' ERR; aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
-                "trap '\''echo DOCKER_PULL_FAILURE 1>&2'\'' ERR; docker pull potato",
-                "trap '\''echo DOCKER_RUN_FAILURE 1>&2'\'' ERR; docker run --rm -d -p 3000:3000 --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
+                "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
+                "docker pull potato",
+                "docker run --rm -d -p 3000:3000 --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
               ]' --query 'Command.CommandId' --output text)
 
             echo "command_id=$command_id" >> $GITHUB_ENV
@@ -78,16 +78,13 @@ jobs:
               --instance-id ${{ env.INSTANCE_ID_1 }} || true
         - name: Get Docker Command Output
           run: |
-            ssm_command_output=$(aws ssm list-commands --command-id ${{ env.command_id }})
-
-            echo "$ssm_command_output"
-
-        #     echo "status=$ssm_command_output" >> $GITHUB_ENV
-        # - name: Check Docker Command Status
-        #   run: |
-        #     if [[ "${{ env.status }}" == "Success" ]]; then
-        #       echo "Docker operations completed successfully"
-        #     else
-        #       echo "Docker operations failed"
-        #       exit 1
-        #     fi
+            ssm_command_output=$(aws ssm list-commands --command-id ${{ env.command_id }} --query 'Commands[0].Status' --output text)
+            echo "status=$ssm_command_output" >> $GITHUB_ENV
+        - name: Check Docker Command Status
+          run: |
+            if [[ "${{ env.status }}" == "Success" ]]; then
+              echo "Your API was deployed successfully"
+            else
+              echo "Your deployment failed...time to start debugging!"
+              exit 1
+            fi
