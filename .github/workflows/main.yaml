@@ -49,13 +49,10 @@ jobs:
         - name: Login to Amazon ECR
           id: login-aws-ecr
           uses: aws-actions/amazon-ecr-login@v2
-        - name: Pull and Run Docker Image from Amazon ECR
+        - name: Execute Docker Commands on AWS Instance to deploy the application
           env:
-            ECR_IMAGE_TO_DEPLOY: ${{ steps.login-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
-            INSTANCE_ID_1: ${{ secrets.INSTANCE_ID_1 }}
-            INSTANCE_ID_2: ${{ secrets.INSTANCE_ID_2 }}
+            ECR_IMAGE_TO_DEPLOY: ${{ steps.login-pf-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
           run: |
-            echo "$ECR_IMAGE_TO_DEPLOY"
             command_id=$(aws ssm send-command \
               --targets Key=InstanceIds,Values=${{ env.INSTANCE_ID_1 }},${{ env.INSTANCE_ID_2 }} \
               --document-name "AWS-RunShellScript" \
@@ -68,59 +65,24 @@ jobs:
                 "trap '\''echo DOCKER_PULL_FAILURE 1>&2'\'' ERR; docker pull ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                 "trap '\''echo DOCKER_RUN_FAILURE 1>&2'\'' ERR; docker run -d -p 3000:3000 --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
               ]' --query 'Command.CommandId' --output text)
-              echo "command_id=$command_id" >> $GITHUB_ENV
+
+            echo "command_id=$command_id" >> $GITHUB_ENV
+
         - name: Retrieve and Store SSM Command Results
-          env:
-            ECR_IMAGE_TO_DEPLOY: ${{ steps.login-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
-            INSTANCE_ID_1: ${{ secrets.INSTANCE_ID_1 }}
-            INSTANCE_ID_2: ${{ secrets.INSTANCE_ID_2 }}
           run: |
             aws ssm wait command-executed \
               --command-id ${{ env.command_id }} \
               --instance-id ${{ env.INSTANCE_ID_1 }} || true
             ssm_command_output=$(aws ssm get-command-invocation \
-                --command-id ${{ env.command_id }} \
-                --instance-id ${{ env.INSTANCE_ID_1 }})
+                  --command-id ${{ env.command_id }} \
+                  --instance-id ${{ env.INSTANCE_ID_1 }})
+
             standard_error_content=$(echo "$ssm_command_output" | jq -r '.StandardErrorContent')
             standard_error_content=${standard_error_content//$'\n'/' '}
             status=$(echo "$ssm_command_output" | jq -r '.Status')
-            echo "$status"
-            echo "$standard_error_content"
 
-        # - name: Execute Docker Commands on AWS Instance to deploy the application
-        #   env:
-        #     ECR_IMAGE_TO_DEPLOY: ${{ steps.login-pf-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
-        #   run: |
-        #     command_id=$(aws ssm send-command \
-        #       --targets Key=InstanceIds,Values=${{ env.INSTANCE_ID_1 }},${{ env.INSTANCE_ID_2 }} \
-        #       --document-name "AWS-RunShellScript" \
-        #       --comment "Executing Docker operations" \
-        #       --parameters commands='[
-                # "set -e",
-                # "trap '\''echo DOCKER_STOP_FAILURE 1>&2'\'' ERR; if docker ps --format '\''{{.Names}}'\'' | grep -q ${{ env.CONTAINER_NAME }}; then docker stop ${{ env.CONTAINER_NAME }}; fi",
-                # "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; if docker ps -a --format '\''{{.Names}}'\'' | grep -q ${{ env.CONTAINER_NAME }}; then docker rename ${{ env.CONTAINER_NAME }} ${{ env.CONTAINER_NAME }}-${{github.run_id}}; fi",
-                # "trap '\''echo DOCKER_LOGIN_FAILURE 1>&2'\'' ERR; aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
-                # "trap '\''echo DOCKER_PULL_FAILURE 1>&2'\'' ERR; docker pull ${{ env.ECR_IMAGE_TO_DEPLOY }}",
-                # "trap '\''echo DOCKER_RUN_FAILURE 1>&2'\'' ERR; docker run -d -p 3000:3000 --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
-        #       ]' --query 'Command.CommandId' --output text)
-
-        #     echo "command_id=$command_id" >> $GITHUB_ENV
-
-        # - name: Retrieve and Store SSM Command Results
-        #   run: |
-        #     aws ssm wait command-executed \
-        #       --command-id ${{ env.command_id }} \
-        #       --instance-id ${{ env.INSTANCE_ID_1 }} || true
-        #     ssm_command_output=$(aws ssm get-command-invocation \
-        #           --command-id ${{ env.command_id }} \
-        #           --instance-id ${{ env.INSTANCE_ID_1 }})
-
-        #     standard_error_content=$(echo "$ssm_command_output" | jq -r '.StandardErrorContent')
-        #     standard_error_content=${standard_error_content//$'\n'/' '}
-        #     status=$(echo "$ssm_command_output" | jq -r '.Status')
-
-        #     echo "status=$status" >> $GITHUB_ENV
-        #     echo "standard_error_content=$standard_error_content" >> $GITHUB_ENV
+            echo "status=$status" >> $GITHUB_ENV
+            echo "standard_error_content=$standard_error_content" >> $GITHUB_ENV
 
         # - name: Check Docker Command Success and Remove Old Container
         #   id: handle_docker_results
