@@ -2,46 +2,66 @@ name: Push Docker Image to Amazon ECR
 on:
   push:
     branches: [ "main" ]
-
 jobs:
-  build:
-    name: Build and Deploy Docker Image
+  job1:
     runs-on: ubuntu-latest
-    env:
-      INSTANCE_ID_1: ${{ secrets.INSTANCE_ID_1 }}
-      INSTANCE_ID_2: ${{ secrets.INSTANCE_ID_2 }}
-      CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+    # Map a step output to a job output
     outputs:
-      output1: "${{ steps.login-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest"
+      output1: ${{ steps.step1.outputs.test }}
+      output2: ${{ steps.step2.outputs.test }}
     steps:
-        - name: Checkout
-          uses: actions/checkout@v2
-        - name: Setup AWS ECR Details
-          uses: aws-actions/configure-aws-credentials@v4
-          with:
-            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws-region: ${{secrets.AWS_REGION}}
-        - name: Login to Amazon ECR
-          id: login-aws-ecr
-          uses: aws-actions/amazon-ecr-login@v2
-        - name: Build and push the tagged docker image to Amazon ECR
-          env:
-            ECR_REGISTRY: ${{ steps.login-aws-ecr.outputs.registry }}
-            ECR_REPOSITORY: ${{secrets.AWS_ECR_REPO}}
-            IMAGE_TAG: latest
-          run: |
-            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-            docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - id: step1
+        run: echo "test=hello" >> "$GITHUB_OUTPUT"
+      - id: step2
+        run: echo "test=world" >> "$GITHUB_OUTPUT"
+  job2:
+    runs-on: ubuntu-latest
+    needs: job1
+    steps:
+      - env:
+          OUTPUT1: ${{needs.job1.outputs.output1}}
+          OUTPUT2: ${{needs.job1.outputs.output2}}
+        run: echo "$OUTPUT1 $OUTPUT2"
 
-  deploy:
-      runs-on: ubuntu-latest
-      needs: build
-      steps:
-        - name: Pull and Run Docker Image from Amazon ECR
-          env:
-            ECR_IMAGE_TO_DEPLOY: ${{ needs.build.outputs.output1 }}
-          run: echo "$ECR_IMAGE_TO_DEPLOY"
+# jobs:
+#   build:
+#     name: Build and Deploy Docker Image
+#     runs-on: ubuntu-latest
+#     env:
+#       INSTANCE_ID_1: ${{ secrets.INSTANCE_ID_1 }}
+#       INSTANCE_ID_2: ${{ secrets.INSTANCE_ID_2 }}
+#       CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+#     outputs:
+#       output1: "${{ steps.login-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest"
+#     steps:
+#         - name: Checkout
+#           uses: actions/checkout@v2
+#         - name: Setup AWS ECR Details
+#           uses: aws-actions/configure-aws-credentials@v4
+#           with:
+#             aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#             aws-region: ${{secrets.AWS_REGION}}
+#         - name: Login to Amazon ECR
+#           id: login-aws-ecr
+#           uses: aws-actions/amazon-ecr-login@v2
+#         - name: Build and push the tagged docker image to Amazon ECR
+#           env:
+#             ECR_REGISTRY: ${{ steps.login-aws-ecr.outputs.registry }}
+#             ECR_REPOSITORY: ${{secrets.AWS_ECR_REPO}}
+#             IMAGE_TAG: latest
+#           run: |
+#             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+#             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+#   deploy:
+#       runs-on: ubuntu-latest
+#       needs: build
+#       steps:
+#         - name: Pull and Run Docker Image from Amazon ECR
+#           env:
+#             ECR_IMAGE_TO_DEPLOY: ${{ needs.build.outputs.output1 }}
+#           run: echo "$ECR_IMAGE_TO_DEPLOY"
 
         # - name: Execute Docker Commands on AWS Instance to deploy the application
         #   env:
