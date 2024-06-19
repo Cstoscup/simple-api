@@ -80,4 +80,12 @@ jobs:
           run: |
             ssm_command_output=$(aws ssm list-commands --command-id ${{ env.command_id }} --query 'Commands[0].Status' --output text)
 
-            echo "$ssm_command_output"
+            echo "status=$ssm_command_output" >> $GITHUB_ENV
+        - name: Check Docker Command Status
+          run: |
+            if [[ "${{ env.status }}" == "Success" ]]; then
+              echo "Docker operations completed successfully"
+            else
+              echo "Docker operations failed"
+              exit 1
+            fi
