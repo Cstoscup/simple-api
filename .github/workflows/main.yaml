@@ -86,9 +86,12 @@ jobs:
                   "trap '\''echo DOCKER_RM_FAILURE 1>&2'\'' ERR; docker rm ${{ env.CONTAINER_NAME }}-${GITHUB_RUN_NUMBER}"
                 ]' --query 'Command.CommandId' --output text)
               echo "Waiting for removal of renamed old container to complete..."
-              removeContainerInvocation = aws ssm wait command-executed \
+              aws ssm wait command-executed \
                 --command-id "$removeOldContainerCommandId" \
                 --instance-id "i-09cb4864dce50998d" || true
+              removeContainerInvocation=$(aws ssm get-command-invocation \
+                  --command-id "$removeOldContainerCommandId" \
+                  --instance-id "i-09cb4864dce50998d")
 
               removeContainerInvocationStatus=$(echo $removeContainerInvocation | jq -r '.Status')
 
