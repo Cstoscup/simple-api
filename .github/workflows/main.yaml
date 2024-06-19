@@ -41,8 +41,7 @@ jobs:
         - name: Pull and Run Docker Image from Amazon ECR
           env:
             ECR_IMAGE_TO_DEPLOY: ${{ needs.build.outputs.output1 }}
-          run: |
-            echo "$ECR_IMAGE_TO_DEPLOY"
+          run: echo "$ECR_IMAGE_TO_DEPLOY"
 
         # - name: Execute Docker Commands on AWS Instance to deploy the application
         #   env:
