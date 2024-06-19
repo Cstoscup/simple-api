@@ -52,6 +52,8 @@ jobs:
         - name: Pull and Run Docker Image from Amazon ECR
           env:
             ECR_IMAGE_TO_DEPLOY: ${{ steps.login-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
+            INSTANCE_ID_1: ${{ secrets.INSTANCE_ID_1 }}
+            INSTANCE_ID_2: ${{ secrets.INSTANCE_ID_2 }}
           run: |
             aws ssm send-command \
               --targets Key=InstanceIds,Values=${{ env.INSTANCE_ID_1 }},${{ env.INSTANCE_ID_2 }} \
