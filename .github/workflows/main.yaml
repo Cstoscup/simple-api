@@ -115,47 +115,47 @@ jobs:
         #     fi
 
         # - name: Check Docker Command Failures and rollback if needed
-          if: env.status == 'Failed'
-          run: |
-            echo "error_content: ${{ env.standard_error_content }}"
+          # if: env.status == 'Failed'
+          # run: |
+            # echo "error_content: ${{ env.standard_error_content }}"
 
-            if echo "${{ env.standard_error_content }}" | grep -Eq "DOCKER_RUN_FAILURE|DOCKER_PULL_FAILURE"; then
-              echo "Docker run command failed"
+            # if echo "${{ env.standard_error_content }}" | grep -Eq "DOCKER_RUN_FAILURE|DOCKER_PULL_FAILURE"; then
+            #   echo "Docker run command failed"
 
-              echo "Handling Docker run failure..."
-                echo "Rollback initiated..."
-                rollbackId=$(aws ssm send-command \
-                  --targets Key=InstanceIds,Values=${{ env.INSTANCE_ID_1 }},${{ env.INSTANCE_ID_2 }} \
-                  --document-name "AWS-RunShellScript" \
-                  --comment "Rollback to previous container version" \
-                  --parameters commands='[
-                    "set -e",
-                    "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; docker rename ${{ secrets.CONTAINER_NAME }}-${{github.run_id}} ${{ secrets.CONTAINER_NAME }}",
-                    "trap '\''echo DOCKER_RESTART_FAILURE 1>&2'\'' ERR; docker restart ${{ secrets.CONTAINER_NAME }}",
-                  ]' --query 'Command.CommandId' --output text)
+            #   echo "Handling Docker run failure..."
+            #     echo "Rollback initiated..."
+            #     rollbackId=$(aws ssm send-command \
+            #       --targets Key=InstanceIds,Values=${{ env.INSTANCE_ID_1 }},${{ env.INSTANCE_ID_2 }} \
+            #       --document-name "AWS-RunShellScript" \
+            #       --comment "Rollback to previous container version" \
+            #       --parameters commands='[
+            #         "set -e",
+            #         "trap '\''echo DOCKER_RENAME_FAILURE 1>&2'\'' ERR; docker rename ${{ secrets.CONTAINER_NAME }}-${{github.run_id}} ${{ secrets.CONTAINER_NAME }}",
+            #         "trap '\''echo DOCKER_RESTART_FAILURE 1>&2'\'' ERR; docker restart ${{ secrets.CONTAINER_NAME }}",
+            #       ]' --query 'Command.CommandId' --output text)
 
-                echo "Waiting for rollback to get completed..."
-                aws ssm wait command-executed \
-                  --command-id "$rollbackId" \
-                  --instance-id ${{ env.INSTANCE_ID_1 }} || true
+            #     echo "Waiting for rollback to get completed..."
+            #     aws ssm wait command-executed \
+            #       --command-id "$rollbackId" \
+            #       --instance-id ${{ env.INSTANCE_ID_1 }} || true
 
-                echo "Fetching rollback details..."
-                rollbackInvocation=$(aws ssm get-command-invocation \
-                  --command-id "$rollbackId" \
-                  --instance-id ${{ env.INSTANCE_ID_1 }})
+            #     echo "Fetching rollback details..."
+            #     rollbackInvocation=$(aws ssm get-command-invocation \
+            #       --command-id "$rollbackId" \
+            #       --instance-id ${{ env.INSTANCE_ID_1 }})
 
-                rollbackstatus=$(echo $rollbackInvocation | jq -r '.Status')
+            #     rollbackstatus=$(echo $rollbackInvocation | jq -r '.Status')
 
-                if [[ $rollbackstatus == "Success" ]]; then
-                  echo "Rollback completed: $rollbackstatus"
-                else
-                  error_content=$(echo $rollbackInvocation | jq -r '.StandardErrorContent')
-                  echo "Rollback failed with error: ${error_content}"
-                fi
-                exit 1
+            #     if [[ $rollbackstatus == "Success" ]]; then
+            #       echo "Rollback completed: $rollbackstatus"
+            #     else
+            #       error_content=$(echo $rollbackInvocation | jq -r '.StandardErrorContent')
+            #       echo "Rollback failed with error: ${error_content}"
+            #     fi
+            #     exit 1
 
-            else
-              echo "Command did not complete successfully."
-              echo "Error details: ${{ env.standard_error_content }}"
-              exit 1
-            fi
+            # else
+            #   echo "Command did not complete successfully."
+            #   echo "Error details: ${{ env.standard_error_content }}"
+            #   exit 1
+            # fi
