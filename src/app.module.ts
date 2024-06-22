@@ -20,6 +20,12 @@ import { TodoEntity } from './todos/todos.entity';
       database: 'postgres',
       synchronize: true,
       logging: true,
+      ssl: true,
+      extra: {
+        ssl: {
+          rejectUnauthorized: false,
+        },
+      },
     }),
   ],
   controllers: [AppController],
