@@ -9,5 +9,5 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm run DB_HOST=$DB_HOST DB_USERNAME=$DB_USERNAME DB_PASSWORD=$DB_PASSWORD build
+RUN npm run build --configuration=DB_HOST=${DB_HOST} --configuration=DB_USERNAME=${DB_USERNAME} --configuration=DB_PASSWORD=${DB_PASSWORD}
 CMD ["node", "dist/main.js"]
