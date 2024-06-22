@@ -1,7 +1,13 @@
 FROM --platform=linux/amd64 node:18-alpine
+ARG DB_HOST=${DB_HOST}
+ARG DB_USERNAME=${DB_USERNAME}
+ARG DB_PASSWORD=${DB_PASSWORD}
+ENV DB_HOST=${DB_HOST}
+ENV DB_USERNAME=${DB_USERNAME}
+ENV DB_PASSWORD=${DB_PASSWORD}
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm run build
+RUN npm run DB_HOST=$DB_HOST DB_USERNAME=$DB_USERNAME DB_PASSWORD=$DB_PASSWORD build
 CMD ["node", "dist/main.js"]
