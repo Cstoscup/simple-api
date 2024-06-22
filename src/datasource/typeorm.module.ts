@@ -16,7 +16,7 @@ import { Global, Module } from '@nestjs/common';
             port: 5432,
             username: process.env.DB_USERNAME,
             password: process.env.DB_PASSWORD,
-            database: 'simple',
+            database: 'postgres',
             synchronize: true,
             entities: [`${__dirname}/../**/**.entity{.ts,.js}`], // this will automatically load all entity file in the src folder
           });
