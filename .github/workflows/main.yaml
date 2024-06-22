@@ -22,11 +22,8 @@ jobs:
           id: build
           env:
             ECR_IMAGE: ${{ steps.login-aws-ecr.outputs.registry }}/${{secrets.AWS_ECR_REPO}}:latest
-            DB_HOST: ${{ secrets.DB_HOST }}
-            DB_USERNAME: ${{ secrets.DB_USERNAME }}
-            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           run: |
-            docker build --build-arg DB_HOST:${{env.DB_HOST}} --build-arg DB_USERNAME:${{env.DB_USERNAME}} --build-arg DB_PASSWORD:${{env.DB_PASSWORD}} -t ${{ env.ECR_IMAGE }} .
+            docker build -t ${{ env.ECR_IMAGE }} .
             docker push ${{ env.ECR_IMAGE }}
 
   deploy:
@@ -60,7 +57,7 @@ jobs:
                 "docker stop ${{ env.CONTAINER_NAME }} || true",
                 "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                 "docker pull ${{ env.ECR_IMAGE_TO_DEPLOY }}",
-                "docker run --rm -d -p 3000:3000 --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
+                "docker run --rm -d -p 3000:3000 -e DB_HOST=${{secrets.DB_HOST}} -e DB_USERNAME=${{secrets.DB_USERNAME}} -e DB_PASSWORD=${{secrets.DB_PASSWORD}} --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
               ]' --query 'Command.CommandId' --output text)
 
             echo "command_id=$command_id" >> $GITHUB_ENV
