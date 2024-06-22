@@ -24,6 +24,9 @@ import { Global, Module } from '@nestjs/common';
           console.log('Database connected successfully');
           return dataSource;
         } catch (error) {
+          console.log('HOST:', process.env.DB_HOST);
+          console.log('USERNAME:', process.env.DB_USERNAME);
+          console.log('PASSWORD:', process.env.DB_PASSWORD);
           console.log('Error connecting to database');
           throw error;
         }
