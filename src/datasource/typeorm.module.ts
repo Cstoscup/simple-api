@@ -20,6 +20,9 @@ import { Global, Module } from '@nestjs/common';
             synchronize: true,
             entities: [`${__dirname}/../**/**.entity{.ts,.js}`], // this will automatically load all entity file in the src folder
           });
+          console.log('HOST:', process.env.DB_HOST);
+          console.log('USERNAME:', process.env.DB_USERNAME);
+          console.log('PASSWORD:', process.env.DB_PASSWORD);
           await dataSource.initialize();
           console.log('Database connected successfully');
           return dataSource;
