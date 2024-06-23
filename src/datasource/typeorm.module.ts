@@ -11,7 +11,6 @@ import dataSource from './datasource';
       inject: [],
       useFactory: async () => {
         try {
-          console.log('env', process.env.ENVIRONMENT === 'production');
           await dataSource.initialize();
           console.log('Database connected successfully');
           return dataSource;
