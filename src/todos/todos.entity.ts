@@ -1,4 +1,9 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity('todo')
 export class TodoEntity {
@@ -10,4 +15,7 @@ export class TodoEntity {
 
   @Column()
   done: boolean;
+
+  @CreateDateColumn({ nullable: true })
+  createdAt: Date;
 }
