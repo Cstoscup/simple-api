@@ -20,7 +20,7 @@ function App() {
   });
 
   useEffect(() => {
-    axios.get("api:3000/todos").then((response) => {
+    axios.get("http://api:3000/todos").then((response) => {
       setTodos(response.data);
     });
   }, []);
@@ -39,7 +39,7 @@ function App() {
   };
 
   const addTodo = () => {
-    axios.post("api:3000/todos", newTodo).then((response) => {
+    axios.post("http://api:3000/todos", newTodo).then((response) => {
       setTodos(response.data);
     });
   };
