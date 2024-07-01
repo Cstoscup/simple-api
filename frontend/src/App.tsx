@@ -20,7 +20,7 @@ function App() {
   });
 
   useEffect(() => {
-    axios.get("http://localhost:3000/todos").then((response) => {
+    axios.get("/api/todos").then((response) => {
       setTodos(response.data);
     });
   }, []);
