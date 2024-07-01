@@ -77,10 +77,11 @@ jobs:
               --comment "Executing Docker operations" \
               --parameters commands='[
                 "set -e",
+                "docker network create my-network || true",
                 "docker stop ${{ env.CONTAINER_NAME }} || true",
                 "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                 "docker pull ${{ env.ECR_IMAGE_TO_DEPLOY }}",
-                "docker run --rm -d -p 3000:3000 -e DB_HOST=${{secrets.DB_HOST}} -e DB_USERNAME=${{secrets.DB_USERNAME}} -e DB_PASSWORD=${{secrets.DB_PASSWORD}} -e ENVIRONMENT=${{secrets.ENVIRONMENT}} --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
+                "docker run --rm -d -p 3000:3000 -e DB_HOST=${{secrets.DB_HOST}} -e DB_USERNAME=${{secrets.DB_USERNAME}} -e DB_PASSWORD=${{secrets.DB_PASSWORD}} -e ENVIRONMENT=${{secrets.ENVIRONMENT}} --name ${{ env.CONTAINER_NAME }} --network my-network ${{ env.ECR_IMAGE_TO_DEPLOY }}"
               ]' --query 'Command.CommandId' --output text)
 
             echo "command_id=$command_id" >> $GITHUB_ENV
@@ -135,10 +136,11 @@ jobs:
               --comment "Executing Docker operations" \
               --parameters commands='[
                 "set -e",
+                "docker network create my-network || true",
                 "docker stop ${{ env.CONTAINER_NAME }} || true",
                 "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_IMAGE_TO_DEPLOY }}",
                 "docker pull ${{ env.ECR_IMAGE_TO_DEPLOY }}",
-                "docker run --rm -d -p 80:80 --name ${{ env.CONTAINER_NAME }} ${{ env.ECR_IMAGE_TO_DEPLOY }}"
+                "docker run --rm -d -p 80:80 --name ${{ env.CONTAINER_NAME }} --network my-network ${{ env.ECR_IMAGE_TO_DEPLOY }}"
               ]' --query 'Command.CommandId' --output text)
 
             echo "command_id=$command_id" >> $GITHUB_ENV
