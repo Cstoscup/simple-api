@@ -39,7 +39,7 @@ function App() {
   };
 
   const addTodo = () => {
-    axios.post("http://localhost:3000/todos", newTodo).then((response) => {
+    axios.post("api:3000/todos", newTodo).then((response) => {
       setTodos(response.data);
     });
   };
