@@ -27,8 +27,9 @@ const Todo = ({ todo, updateTodos }: Props) => {
 
   const editTodo = (key: string, value: string | boolean) => {
     const updatedTodo = { ...todo, [key]: value };
+    const host = window.location.hostname;
     axios
-      .put(`http://localhost:3000/todos/${todo.id}`, {
+      .put(`http://${host}/api/todos/${todo.id}`, {
         todo: updatedTodo,
       })
       .then((response) => {
