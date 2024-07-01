@@ -20,7 +20,9 @@ function App() {
   });
 
   useEffect(() => {
-    axios.get("http://localhost:3000/todos").then((response) => {
+    const host = window.location.hostname;
+    console.log("http://" + host + "/api/todos");
+    axios.get("http://" + host + "/api/todos").then((response) => {
       setTodos(response.data);
     });
   }, []);
