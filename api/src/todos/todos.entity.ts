@@ -11,6 +11,9 @@ export class TodoEntity {
   id: number;
 
   @Column()
+  title: string;
+
+  @Column()
   description: string;
 
   @Column()
